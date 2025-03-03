@@ -80,7 +80,11 @@ struct LearnOptionsView: View {
                                     y: geometry.size.height * 0.1)
                         
                         VStack{
-                            NavigationLink(destination: ContentView()) {
+                            NavigationLink(destination:
+                                            LetterView()
+//                                            LetterDrawingView(correctLetter: "A")
+                            )
+                            {
                                 Text("Letters")
                                     .font(.custom("Arial", size: 30))
                                     .bold()
@@ -111,14 +115,13 @@ struct LearnOptionsView: View {
                 }
             }
             .onAppear {
-                // Lock orientation to portrait when HomeView appears
                 AppDelegate.lockOrientation(.portrait)
             }
             .onDisappear {
-                // Unlock orientation when navigating away from HomeView
                 AppDelegate.unlockOrientation()
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
