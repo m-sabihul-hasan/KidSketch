@@ -81,7 +81,7 @@ struct LearnOptionsView: View {
                         
                         VStack{
                             NavigationLink(destination:
-                                            LetterView()
+                                            LetterDrawView()
 //                                            LetterDrawingView(correctLetter: "A")
                             )
                             {
