@@ -12,8 +12,7 @@ struct KidSketchApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-            LetterDrawView()
-//            LetterDrawingView(correctLetter: "A")
+            HomeView()
         }
     }
 }

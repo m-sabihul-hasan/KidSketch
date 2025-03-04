@@ -11,10 +11,12 @@ import PencilKit
 struct LetterDrawView: View {
     @State private var currentLetterIndex = 0
     @State private var canvasView = PKCanvasView()
+    @State private var practiceCanvasView = PKCanvasView()
     @State private var isCompleted = false
     @State private var showWellDone = false
     @State private var penColor: Color = .red
     @State private var brushThickness: CGFloat = 20
+    @State private var isPracticeComplete = false
 
     let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -30,59 +32,74 @@ struct LetterDrawView: View {
             GeometryReader { geometry in
                 ZStack {
                     Color(hex: "#ffffff").ignoresSafeArea()
-
                     VStack {
-                        HStack {
-                            Image(String(letters[currentLetterIndex])) // Placeholder for letter image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: geometry.size.width * 0.35)
+                        HStack{
+                                ZStack {
+                                    Image(String(letters[currentLetterIndex]))
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: geometry.size.width * 0.35)
+                                    
 
-                            ZStack {
-                                Image("canvas")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: geometry.size.width * 0.55, maxHeight: geometry.size.height * 0.3)
-                                    .offset(y: geometry.size.height * -0.1)
-
-                                CanvasView(
-                                    canvasView: $canvasView,
-                                    penColor: penColor,
-                                    brushThickness: brushThickness,
-                                    onComplete: completeTracing,
-                                    requiredStrokes: requiredStrokes[letters[currentLetterIndex], default: 2] // Default 2 strokes if missing
-                                )
-                                .frame(maxWidth: geometry.size.width * 0.34, maxHeight: geometry.size.height * 0.3)
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 30)
-                                        .fill(Color.white)
-                                        .shadow(radius: 10)
-                                )
-                                .offset(x: geometry.size.width * -0.01, y: geometry.size.height * 0.07)
-                            }
+                                    CanvasView(
+                                        canvasView: $practiceCanvasView,
+                                        penColor: penColor,
+                                        brushThickness: brushThickness,
+                                        onComplete: completePractice,
+                                        requiredStrokes: requiredStrokes[letters[currentLetterIndex], default: 2]
+                                    )
+                                    .frame(width: geometry.size.width * 0.35,
+                                           height: geometry.size.height * 0.5)
+                                    .padding()
+//                                    .background(
+//                                        RoundedRectangle(cornerRadius: 30)
+//                                            .fill(Color.white)
+//                                            .shadow(radius: 10)
+//                                    )
+                                }
+                                .offset(x: geometry.size.width * 0.03)
+                                
+                                ZStack {
+                                    Image("canvas")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: geometry.size.width * 0.55, maxHeight: geometry.size.height * 0.3)
+                                        .offset(y: geometry.size.height * -0.1)
+                                    
+                                    CanvasView(
+                                        canvasView: $canvasView,
+                                        penColor: penColor,
+                                        brushThickness: brushThickness,
+                                        onComplete: completeTracing,
+                                        requiredStrokes: requiredStrokes[letters[currentLetterIndex], default: 2]
+                                    )
+                                    .frame(width: geometry.size.width * 0.34,
+                                           height: geometry.size.height * 0.3)
+                                    .padding()
+//                                    .background(
+//                                        RoundedRectangle(cornerRadius: 30)
+//                                            .fill(Color.white)
+//                                            .shadow(radius: 10)
+//                                    )
+                                    .allowsHitTesting(isPracticeComplete)
+                                    .opacity(isPracticeComplete ? 1 : 0.5)
+                                    .offset(x: geometry.size.width * -0.01, y: geometry.size.height * 0.07)
+                                }
+                            
                         }
-                        .offset(y: geometry.size.height * -0.065)
+                        .offset(y: geometry.size.height * -0.05)
 
-                        HStack {
-                            Text("Brush Size")
-                            Slider(value: $brushThickness, in: 5...50)
-                        }
-                        .padding()
-
-                        HStack {
-                            Text("Color")
-                            ColorPicker("Pick Color", selection: $penColor)
-                        }
-                        .padding()
-
+                        
+                        // Decorative grass image
                         Image("grass")
                             .resizable()
                             .scaledToFill()
-                            .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.33)
-                            .offset(x: geometry.size.width * -0.05 ,y: geometry.size.height * -0.5)
+                            .frame(width: geometry.size.width * 0.3,
+                                   height: geometry.size.height * 0.33)
+                            .offset(x: geometry.size.width * -0.05,
+                                    y: geometry.size.height * -0.3)
                     }
-
+                    
                     if showWellDone {
                         VStack {
                             Text("🎉 Well Done! 🎉")
@@ -92,6 +109,7 @@ struct LetterDrawView: View {
                                 .background(Color.blue.opacity(0.7))
                                 .cornerRadius(10)
                                 .transition(.scale)
+                                .offset(y: 100)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.black.opacity(0.3))
@@ -101,6 +119,7 @@ struct LetterDrawView: View {
                                 nextLetter()
                             }
                         }
+
                     }
                 }
             }
@@ -124,16 +143,23 @@ struct LetterDrawView: View {
 
     func resetCanvas() {
         canvasView.drawing = PKDrawing()
+        practiceCanvasView.drawing = PKDrawing()
         isCompleted = false
+        isPracticeComplete = false
     }
-
+    
+    // Called when the practice canvas meets the required strokes.
+    func completePractice() {
+        isPracticeComplete = true
+    }
+    
+    // Called when the main canvas meets the required strokes.
     func completeTracing() {
         isCompleted = true
         showWellDone = true
     }
 }
 
-// MARK: - Canvas View with Custom Strokes
 struct CanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
     var penColor: Color
@@ -144,11 +170,11 @@ struct CanvasView: UIViewRepresentable {
     func makeUIView(context: Context) -> PKCanvasView {
         canvasView.isUserInteractionEnabled = true
         canvasView.backgroundColor = .clear
-
+        
         if #available(iOS 14.0, *) {
             canvasView.drawingPolicy = .anyInput
         }
-
+        
         canvasView.tool = PKInkingTool(.marker, color: penColor.toUIColor(), width: brushThickness)
         canvasView.delegate = context.coordinator
         return canvasView
@@ -156,7 +182,7 @@ struct CanvasView: UIViewRepresentable {
 
     func updateUIView(_ uiView: PKCanvasView, context: Context) {
         uiView.tool = PKInkingTool(.marker, color: penColor.toUIColor(), width: brushThickness)
-        context.coordinator.requiredStrokes = requiredStrokes // Ensure stroke count updates dynamically
+        context.coordinator.requiredStrokes = requiredStrokes // Update required strokes if needed
     }
 
     func makeCoordinator() -> Coordinator {
@@ -186,13 +212,12 @@ struct CanvasView: UIViewRepresentable {
     }
 }
 
-// MARK: - Color Extension
+
 extension Color {
     func toUIColor() -> UIColor {
         return UIColor(self)
     }
 }
-
 #Preview {
     LetterDrawView()
 }
