@@ -95,17 +95,17 @@ struct LearnOptionsView: View {
                                     .offset(y: geometry.size.height * -0.02)
                             }
                             
-                            NavigationLink(destination: ContentView()) {
-                                Text("Numbers")
-                                    .font(.custom("Arial", size: 30))
-                                    .bold()
-                                    .padding()
-                                    .frame(maxWidth: geometry.size.width * 0.3, maxHeight: geometry.size.height * 0.06)
-                                    .background(Color(hex: "#ffe500"))
-                                    .foregroundColor(.black)
-                                    .cornerRadius(30)
-                                    .offset(y: geometry.size.height * 0.02)
-                            }
+//                            NavigationLink(destination: ContentView()) {
+//                                Text("Numbers")
+//                                    .font(.custom("Arial", size: 30))
+//                                    .bold()
+//                                    .padding()
+//                                    .frame(maxWidth: geometry.size.width * 0.3, maxHeight: geometry.size.height * 0.06)
+//                                    .background(Color(hex: "#ffe500"))
+//                                    .foregroundColor(.black)
+//                                    .cornerRadius(30)
+//                                    .offset(y: geometry.size.height * 0.02)
+//                            }
                         }
                         .offset(y: geometry.size.height * -0.08)
                         
