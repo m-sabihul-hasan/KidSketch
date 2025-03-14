@@ -10,12 +10,13 @@ import SwiftUI
 @main
 struct KidSketchApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @State private var showLaunchScreen = false
+    @State private var showLaunchScreen = true
     
     var body: some Scene {
         WindowGroup {
             if showLaunchScreen {
                 LaunchScreenView()
+//                ContentView()
                     .onAppear{
                         AppDelegate.lockOrientation(.landscape)
                         print("[HandwritingApp] Launched in landscape mode.")
@@ -25,8 +26,7 @@ struct KidSketchApp: App {
                     }
             }
             else {
-                ContentView()
-//                HomeView()
+                HomeView()
                     .onAppear {
                         AppDelegate.lockOrientation(.landscape)
                         print("[HandwritingApp] Launched in landscape mode.")
