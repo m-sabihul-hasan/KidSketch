@@ -10,14 +10,31 @@ import SwiftUI
 @main
 struct KidSketchApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var showLaunchScreen = false
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear {
-                    AppDelegate.lockOrientation(.landscape)
-                    print("[HandwritingApp] Launched in landscape mode.")
-
-                }
+            if showLaunchScreen {
+                LaunchScreenView()
+                    .onAppear{
+                        AppDelegate.lockOrientation(.landscape)
+                        print("[HandwritingApp] Launched in landscape mode.")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                            showLaunchScreen = false
+                        }
+                    }
+            }
+            else {
+                ContentView()
+//                HomeView()
+                    .onAppear {
+                        AppDelegate.lockOrientation(.landscape)
+                        print("[HandwritingApp] Launched in landscape mode.")
+                        
+                        
+                    }
+                
+            }
         }
     }
 }

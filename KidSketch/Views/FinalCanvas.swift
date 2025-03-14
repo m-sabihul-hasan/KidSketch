@@ -25,7 +25,7 @@ struct FinalCanvas: View {
 
     var body: some View {
         ZStack {
-            // If locked, show a semi-transparent overlay or something
+            // If locked, show a semi-transparent overlay
             if !isCanvasUnlocked {
                 Color.gray.opacity(0.3)
                     .overlay(Text("Locked").font(.title))
@@ -45,7 +45,7 @@ struct FinalCanvas: View {
                                 if strokeCount < maxStrokes {
                                     strokes.append([])
                                     strokeCount += 1
-                                    print("[FinalCanvas] stroke ended. strokeCount = \(strokeCount)")
+                                    print("[FinalCanvas] Stroke ended. strokeCount = \(strokeCount)")
 
                                     // If we have reached required strokes, classify
                                     if strokeCount == maxStrokes {
@@ -72,8 +72,14 @@ struct FinalCanvas: View {
         }
         .onChange(of: resetCanvasTrigger) {
             if resetCanvasTrigger {
-                print("[DrawingCanvas] resetCanvasTrigger → clearing strokes.")
+                print("[Canvas] Clearing strokes.")
                 strokes = [[]]
+                
+                // Optionally set back to false to watch for the next time we set it to true
+                // e.g.:
+                DispatchQueue.main.async {
+                    resetCanvasTrigger = false
+                }
             }
         }
     }
@@ -202,20 +208,3 @@ func classifyDrawing(
         }
     }
 }
-
-
-// MARK: - Preview
-//#Preview {
-//    DrawingCanvas(
-//        strokeCount: .constant(0),
-//        maxStrokes: 3,
-//        onCompletion: { _ in
-//            print("[DrawingCanvas Preview] Called onCompletion.")
-//        },
-//        resetCanvasTrigger: .constant(false),
-//        strokeColor: .black,
-//        strokeWidth: 8.0
-//    )
-//    .border(Color.gray, width: 2)
-//    .frame(width: 500, height: 400)
-//}

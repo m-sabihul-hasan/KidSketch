@@ -276,7 +276,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KidSketch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TempName;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dot to Dot";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
@@ -311,7 +311,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KidSketch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TempName;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dot to Dot";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;

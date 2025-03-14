@@ -17,12 +17,10 @@ struct PracticeCanvas: View {
     @State private var strokes: [[CGPoint]] = [[]]
 
     var body: some View {
-        // 1) Make sure we have a known frame for the entire canvas
-        //    so the user can draw anywhere inside
         ZStack(alignment: .topLeading) {
-            // 2) Transparent color that captures touches
+            // Transparent color that captures touches
             Color.clear
-                .contentShape(Rectangle()) // So the gesture knows the shape
+                .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
@@ -34,8 +32,9 @@ struct PracticeCanvas: View {
                             if strokeCount < maxStrokes {
                                 strokes.append([])
                                 strokeCount += 1
-                                print("[PracticeCanvas] stroke ended. strokeCount = \(strokeCount)")
+                                print("[PracticeCanvas] Stroke ended. strokeCount = \(strokeCount)")
 
+                                // If practice strokes are done, unlock final
                                 if strokeCount == maxStrokes {
                                     onPracticeComplete()
                                 }
@@ -43,7 +42,7 @@ struct PracticeCanvas: View {
                         }
                 )
 
-            // 3) Draw each stroke
+            // Draw each stroke
             ForEach(strokes, id: \.self) { stroke in
                 Path { path in
                     if let firstPoint = stroke.first {
@@ -53,13 +52,20 @@ struct PracticeCanvas: View {
                         }
                     }
                 }
+                // Customize color/width as needed
                 .stroke(Color.red.opacity(0.7), lineWidth: 12)
             }
         }
         .onChange(of: resetCanvasTrigger) {
             if resetCanvasTrigger {
-                print("[DrawingCanvas] resetCanvasTrigger → clearing strokes.")
+                print("[Canvas] Clearing strokes.")
                 strokes = [[]]
+                
+                // Optionally set back to false to watch for the next time we set it to true
+                // e.g.:
+                DispatchQueue.main.async {
+                    resetCanvasTrigger = false
+                }
             }
         }
     }
