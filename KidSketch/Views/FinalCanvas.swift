@@ -179,7 +179,7 @@ func preprocessImage(_ image: UIImage) -> UIImage? {
 }
 
 
-func classifyDrawing(_ image: UIImage, useVision: Bool, completion: @escaping (String?) -> Void) {
+func classifyDrawing(_ image: UIImage, useVision: Bool, completion: @escaping ([String: Float]?) -> Void) {
     let processedImage = preprocessImage(image) ?? image // Use the processed version
 
     if useVision {
@@ -191,17 +191,26 @@ func classifyDrawing(_ image: UIImage, useVision: Bool, completion: @escaping (S
                 completion(nil)
                 return
             }
-            guard
-                let observations = request.results as? [VNRecognizedTextObservation],
-                let firstObs = observations.first,
-                let topCandidate = firstObs.topCandidates(1).first
-            else {
+
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
                 print("[classifyDrawing] ⚠️ No recognized text found (Vision).")
                 completion(nil)
                 return
             }
-            print("[classifyDrawing] ✅ Vision found text: \(topCandidate.string)")
-            completion(topCandidate.string)
+
+            var predictions: [String: Float] = [:]
+            
+            for observation in observations {
+                if let topCandidate = observation.topCandidates(1).first {
+                    predictions[topCandidate.string] = observation.confidence
+                }
+            }
+
+            if let highest = predictions.max(by: { $0.value < $1.value }) {
+                print("[classifyDrawing] ✅ Highest Prediction: \(highest.key) (confidence \(highest.value))")
+            }
+
+            completion(predictions.isEmpty ? nil : predictions)
         }
 
         request.recognitionLevel = .accurate
@@ -238,16 +247,24 @@ func classifyDrawing(_ image: UIImage, useVision: Bool, completion: @escaping (S
                     completion(nil)
                     return
                 }
-                guard
-                    let results = request.results as? [VNClassificationObservation],
-                    let topResult = results.first
-                else {
+
+                guard let results = request.results as? [VNClassificationObservation] else {
                     print("[classifyDrawing] ⚠️ No classification result (CoreML).")
                     completion(nil)
                     return
                 }
-                print("[classifyDrawing] ✅ .mlmodel recognized: \(topResult.identifier) (confidence \(topResult.confidence))")
-                completion(topResult.identifier)
+
+                var predictions: [String: Float] = [:]
+                
+                for result in results {
+                    predictions[result.identifier] = result.confidence
+                }
+
+                if let highest = predictions.max(by: { $0.value < $1.value }) {
+                    print("[classifyDrawing] ✅ Highest Prediction: \(highest.key) (confidence \(highest.value))")
+                }
+
+                completion(predictions.isEmpty ? nil : predictions)
             }
 
             guard let ciImage = CIImage(image: processedImage) else {

@@ -184,23 +184,49 @@ struct ContentView: View {
         clearCanvases()
     }
 
-    func validateLetter(_ detectedLetter: String?) {
+    func validateLetter(_ detectedLetters: [String: Float]?) {
         totalAttempts += 1
         
-        guard let detected = detectedLetter else {
+        guard let detectedLetters = detectedLetters else {
             incorrectAttempts += 1
             showCustomAlert(title: "No Letter Recognized", message: "Detected: None\nExpected: \(selectedLetter)")
-            clearCanvases() // ✅ Clear canvas on incorrect classification
+            clearCanvases()
             return
         }
+
+        // 🔹 Sort predictions by confidence (descending)
+        let sortedPredictions = detectedLetters.sorted { $0.value > $1.value }
         
-        if detected == String(selectedLetter), finalStrokeCount == maxStrokes {
+        // Extract top 10 letters sorted by confidence
+        let top10PredictedLetters = sortedPredictions.prefix(10).map { $0.key }
+
+        // Debug: Print sorted predictions
+        print("[validateLetter] 🔍 Sorted Predictions (Top 10 Confidence):")
+        for (letter, confidence) in sortedPredictions.prefix(10) {
+            print("    - \(letter): \(confidence)")
+        }
+
+        // Debug: Print highest confidence prediction
+        if let highest = sortedPredictions.first {
+            print("[validateLetter] 🔍 Highest classified letter: \(highest.key) (confidence: \(highest.value))")
+        }
+
+        // Debug: Print confidence of selected letter if present
+        if let selectedLetterConfidence = detectedLetters[String(selectedLetter)] {
+            print("[validateLetter] 🔍 Confidence of selected letter (\(selectedLetter)): \(selectedLetterConfidence)")
+        } else {
+            print("[validateLetter] 🔍 Selected letter (\(selectedLetter)) not found in predictions.")
+        }
+
+        // ✅ Classification Logic
+        if top10PredictedLetters.contains(String(selectedLetter)), finalStrokeCount == maxStrokes {
             correctAttempts += 1
-            showCustomAlert(title: "Correct!", message: "Detected: \(detected)\nExpected: \(selectedLetter)")
+            showCustomAlert(title: "Correct!", message: "Detected: \(selectedLetter)\nExpected: \(selectedLetter)")
         } else {
             incorrectAttempts += 1
-            showCustomAlert(title: "Incorrect!", message: "Detected: \(detected)\nExpected: \(selectedLetter)")
-            clearCanvases() // ✅ Clear canvas when incorrect classification is made
+            let highestConfidenceLetter = sortedPredictions.first?.key ?? "None"
+            showCustomAlert(title: "Incorrect!", message: "Detected: \(highestConfidenceLetter)\nExpected: \(selectedLetter)")
+            clearCanvases()
         }
     }
 
