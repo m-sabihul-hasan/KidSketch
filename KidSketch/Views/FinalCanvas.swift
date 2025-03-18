@@ -65,7 +65,7 @@ struct FinalCanvas: View {
                     .stroke(Color.black, lineWidth: 20)
                 }
             }
-
+///
 //            if let image = processedImage {
 //                Button("Preview Processed Image") {
 //                    showImagePreview(image: image)
@@ -152,20 +152,11 @@ func preprocessImage(_ image: UIImage) -> UIImage? {
     let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono")
     grayscaleFilter?.setValue(ciImage, forKey: kCIInputImageKey)
 
-//    // Invert colors (so text is black on white background)
-//    let invertFilter = CIFilter(name: "CIColorInvert")
-//    invertFilter?.setValue(grayscaleFilter?.outputImage, forKey: kCIInputImageKey)
-
     // Increase contrast
     let contrastFilter = CIFilter(name: "CIColorControls")
     contrastFilter?.setValue(grayscaleFilter?.outputImage, forKey: kCIInputImageKey)
     contrastFilter?.setValue(1.5, forKey: "inputContrast")
     contrastFilter?.setValue(0.2, forKey: "inputBrightness") // Slightly brighten
-
-//    // Apply dilation (thickens strokes)
-//    let dilationFilter = CIFilter(name: "CIMorphologyMaximum") // Expands dark areas
-//    dilationFilter?.setValue(contrastFilter?.outputImage, forKey: kCIInputImageKey)
-//    dilationFilter?.setValue(0.5, forKey: "inputRadius") // Adjust for more thickness
 
     guard let outputImage = contrastFilter?.outputImage,
           let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else {
