@@ -6,69 +6,75 @@
 //
 
 import SwiftUI
-import CoreML
 import Vision
 import UIKit
+import CoreImage
 
 struct FinalCanvas: View {
     @Binding var strokeCount: Int
     let maxStrokes: Int
     @Binding var resetCanvasTrigger: Bool
 
-    // Whether user can draw or not
     let isCanvasUnlocked: Bool
-
-    // Called when user has drawn the required strokes in final canvas
     let onClassify: (UIImage) -> Void
 
     @State private var strokes: [[CGPoint]] = [[]]
+    @State private var processedImage: UIImage?
 
     var body: some View {
-        ZStack {
-            // If locked, show a semi-transparent overlay
-            if !isCanvasUnlocked {
-                Color.gray.opacity(0.3)
-                    .overlay(Text("Locked").font(.title))
-            }
+        VStack {
+            ZStack {
+                if !isCanvasUnlocked {
+                    Color.gray.opacity(0.3)
+                        .overlay(Text("Locked").font(.title))
+                }
 
-            // If unlocked, let user draw
-            if isCanvasUnlocked {
-                Color.white
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if strokeCount < maxStrokes {
-                                    strokes[strokes.count - 1].append(value.location)
-                                }
-                            }
-                            .onEnded { _ in
-                                if strokeCount < maxStrokes {
-                                    strokes.append([])
-                                    strokeCount += 1
-                                    print("[FinalCanvas] Stroke ended. strokeCount = \(strokeCount)")
-
-                                    // If we have reached required strokes, classify
-                                    if strokeCount == maxStrokes {
-                                        let image = renderDrawing()
-                                        onClassify(image)
+                if isCanvasUnlocked {
+                    Color.white
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    if strokeCount < maxStrokes {
+                                        strokes[strokes.count - 1].append(value.location)
                                     }
                                 }
-                            }
-                    )
-            }
+                                .onEnded { _ in
+                                    if strokeCount < maxStrokes {
+                                        strokes.append([])
+                                        strokeCount += 1
 
-            // Draw strokes
-            ForEach(strokes, id: \.self) { stroke in
-                Path { path in
-                    if let firstPoint = stroke.first {
-                        path.move(to: firstPoint)
-                        for point in stroke.dropFirst() {
-                            path.addLine(to: point)
+                                        if strokeCount == maxStrokes {
+                                            let image = renderDrawing()
+                                            processedImage = preprocessImage(image)
+                                            onClassify(processedImage ?? image)
+                                        }
+                                    }
+                                }
+                        )
+                }
+
+                ForEach(strokes, id: \.self) { stroke in
+                    Path { path in
+                        if let firstPoint = stroke.first {
+                            path.move(to: firstPoint)
+                            for point in stroke.dropFirst() {
+                                path.addLine(to: point)
+                            }
                         }
                     }
+                    .stroke(Color.black, lineWidth: 20)
                 }
-                .stroke(Color.black, lineWidth: 25)
             }
+
+//            if let image = processedImage {
+//                Button("Preview Processed Image") {
+//                    showImagePreview(image: image)
+//                }
+//                .padding()
+//                .background(Color.blue)
+//                .foregroundColor(.white)
+//                .cornerRadius(10)
+//            }
         }
         .onChange(of: resetCanvasTrigger) {
             if resetCanvasTrigger {
@@ -85,7 +91,6 @@ struct FinalCanvas: View {
     }
 
     func renderDrawing() -> UIImage {
-        print("[FinalCanvas] renderDrawing -> generating UIImage")
         let renderer = UIGraphicsImageRenderer(size: UIScreen.main.bounds.size)
         return renderer.image { ctx in
             UIColor.white.setFill()
@@ -106,15 +111,79 @@ struct FinalCanvas: View {
     }
 }
 
-// MARK: - (OPTIONAL) CLASSIFICATION (Use Vision or ML model)
-func classifyDrawing(
-    _ image: UIImage,
-    useVision: Bool,
-    completion: @escaping (String?) -> Void
-) {
+func showImagePreview(image: UIImage) {
+    print("[Preview] Displaying preprocessed image.")
+
+    let previewVC = UIViewController()
+    previewVC.view.backgroundColor = .white
+
+    let imageView = UIImageView(image: image)
+    imageView.contentMode = .scaleAspectFit
+    imageView.frame = previewVC.view.frame
+    previewVC.view.addSubview(imageView)
+
+    let closeButton = UIButton(frame: CGRect(x: 20, y: 40, width: 80, height: 40))
+    closeButton.setTitle("Close", for: .normal)
+    closeButton.backgroundColor = .black
+    closeButton.setTitleColor(.white, for: .normal)
+    closeButton.addTarget(previewVC, action: #selector(UIViewController.dismiss), for: .touchUpInside)
+    previewVC.view.addSubview(closeButton)
+
+    // Use UIWindowScene for iOS 15+
+    if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+       let window = scene.windows.first {
+        window.rootViewController?.present(previewVC, animated: true)
+    } else {
+        print("[Preview] ⚠️ Unable to find UIWindowScene.")
+    }
+}
+
+func preprocessImage(_ image: UIImage) -> UIImage? {
+    print("[Preprocessing] Converting image to grayscale and thickening strokes...")
+
+    guard let ciImage = CIImage(image: image) else {
+        print("[Preprocessing] ⚠️ Failed to convert UIImage to CIImage.")
+        return nil
+    }
+
+    let context = CIContext(options: nil)
+
+    // Convert to grayscale
+    let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono")
+    grayscaleFilter?.setValue(ciImage, forKey: kCIInputImageKey)
+
+//    // Invert colors (so text is black on white background)
+//    let invertFilter = CIFilter(name: "CIColorInvert")
+//    invertFilter?.setValue(grayscaleFilter?.outputImage, forKey: kCIInputImageKey)
+
+    // Increase contrast
+    let contrastFilter = CIFilter(name: "CIColorControls")
+    contrastFilter?.setValue(grayscaleFilter?.outputImage, forKey: kCIInputImageKey)
+    contrastFilter?.setValue(1.5, forKey: "inputContrast")
+    contrastFilter?.setValue(0.2, forKey: "inputBrightness") // Slightly brighten
+
+//    // Apply dilation (thickens strokes)
+//    let dilationFilter = CIFilter(name: "CIMorphologyMaximum") // Expands dark areas
+//    dilationFilter?.setValue(contrastFilter?.outputImage, forKey: kCIInputImageKey)
+//    dilationFilter?.setValue(0.5, forKey: "inputRadius") // Adjust for more thickness
+
+    guard let outputImage = contrastFilter?.outputImage,
+          let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else {
+        print("[Preprocessing] ⚠️ Failed to process image.")
+        return nil
+    }
+
+    let finalImage = UIImage(cgImage: cgImage)
+    print("[Preprocessing] ✅ Image successfully processed with thicker strokes.")
+    return finalImage
+}
+
+
+func classifyDrawing(_ image: UIImage, useVision: Bool, completion: @escaping (String?) -> Void) {
+    let processedImage = preprocessImage(image) ?? image // Use the processed version
+
     if useVision {
-        // =============== VISION OCR PATH ===============
-        print("[classifyDrawing] Using Vision OCR for detection...")
+        print("[classifyDrawing] Using Vision OCR with preprocessed image...")
 
         let request = VNRecognizeTextRequest { request, error in
             if let error = error {
@@ -131,16 +200,15 @@ func classifyDrawing(
                 completion(nil)
                 return
             }
-            print("[classifyDrawing] Vision found text: \(topCandidate.string)")
+            print("[classifyDrawing] ✅ Vision found text: \(topCandidate.string)")
             completion(topCandidate.string)
         }
 
-        // Vision OCR settings
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
-        request.recognitionLanguages = ["en"] // or ["en-US"]
+        request.recognitionLanguages = ["en"]
 
-        guard let cgImage = image.cgImage else {
+        guard let cgImage = processedImage.cgImage else {
             print("[classifyDrawing] ⚠️ Could not get CGImage for Vision.")
             completion(nil)
             return
@@ -157,16 +225,13 @@ func classifyDrawing(
         }
 
     } else {
-        // =============== CUSTOM .MLMODEL PATH ===============
-        print("[classifyDrawing] Using custom HandwritingModel for detection...")
+        print("[classifyDrawing] Using CoreML handwriting model...")
 
         let config = MLModelConfiguration()
         do {
-            // Load with init(configuration:)
             let handwritingMLModel = try HandwritingModel(configuration: config)
             let visionModel = try VNCoreMLModel(for: handwritingMLModel.model)
 
-            // Create a VNCoreMLRequest
             let request = VNCoreMLRequest(model: visionModel) { request, error in
                 if let error = error {
                     print("[classifyDrawing] ⚠️ CoreML request error: \(error)")
@@ -181,12 +246,11 @@ func classifyDrawing(
                     completion(nil)
                     return
                 }
-                print("[classifyDrawing] .mlmodel recognized: \(topResult.identifier) (confidence \(topResult.confidence))")
+                print("[classifyDrawing] ✅ .mlmodel recognized: \(topResult.identifier) (confidence \(topResult.confidence))")
                 completion(topResult.identifier)
             }
 
-            // Convert UIImage -> CIImage
-            guard let ciImage = CIImage(image: image) else {
+            guard let ciImage = CIImage(image: processedImage) else {
                 print("[classifyDrawing] ⚠️ Failed to convert UIImage -> CIImage.")
                 completion(nil)
                 return
@@ -203,7 +267,7 @@ func classifyDrawing(
             }
 
         } catch {
-            print("[classifyDrawing] ⚠️ Failed to load HandwritingModel with configuration: \(error)")
+            print("[classifyDrawing] ⚠️ Failed to load HandwritingModel: \(error)")
             completion(nil)
         }
     }

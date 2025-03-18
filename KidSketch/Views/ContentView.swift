@@ -4,24 +4,25 @@
 //
 //  Created by Muhammad Sabihul Hasan on 12/03/25.
 //
+//    let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 import SwiftUI
 
 struct ContentView: View {
-//    let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    let letters = Array("AC")
+    let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     let requiredStrokes: [Character: Int] = [
         "A": 3, "B": 2, "C": 1, "D": 2, "E": 4, "F": 3, "G": 2, "H": 3, "I": 3,
         "J": 1, "K": 3, "L": 2, "M": 4, "N": 3, "O": 1, "P": 2, "Q": 2, "R": 2,
         "S": 1, "T": 2, "U": 1, "V": 2, "W": 4, "X": 2, "Y": 3, "Z": 3
     ]
-
+    
+    let selectedLetter: Character?
+    
     // Tracking progress stats
-    @State private var uniqueCorrectLetters = Set<Character>()
     @State private var totalAttempts = 0
     @State private var correctAttempts = 0
     @State private var incorrectAttempts = 0
-
+    
     // Canvas state
     @State private var currentLetterIndex = 0
     @State private var practiceStrokeCount = 0
@@ -30,12 +31,20 @@ struct ContentView: View {
     @State private var resetFinalCanvas = false
     @State private var isFinalCanvasUnlocked = false
 
-    // Alert & Progress Tracking
+    // Progress Tracking
+    @State private var lastAttemptedLetter: Character = "A"
+
+    // **New: ActiveSheet Enum**
+    enum ActiveSheet: Identifiable {
+        case progress, letterMenu
+        var id: Self { self }
+    }
+    @State private var activeSheet: ActiveSheet? = nil
+
+    // **Alerts**
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
-    @State private var alertIsCorrect = false
-    @State private var showProgressTracker = false  // **New State: Show Progress View**
     
     var currentLetter: Character {
         letters[currentLetterIndex]
@@ -62,9 +71,12 @@ struct ContentView: View {
                         Text("Strokes: \(practiceStrokeCount)/\(maxStrokes)")
                         Spacer()
                         Button("Reset") {
-                            practiceStrokeCount = 0
                             resetPracticeCanvas = true
                             isFinalCanvasUnlocked = false
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                resetPracticeCanvas = false
+                            }
                         }
                         .padding()
                     }
@@ -88,10 +100,9 @@ struct ContentView: View {
                         .frame(width: geometry.size.width * 0.4,
                                height: geometry.size.height * 0.6)
                     }
-//                    .border(Color.gray, width: 1)
                 }
                 .offset(x: -150, y: 80)
-
+                
                 VStack {
                     ZStack {
                         Image("canvas")
@@ -122,12 +133,12 @@ struct ContentView: View {
                         Text("Strokes: \(finalStrokeCount)/\(maxStrokes)")
                         Spacer()
                         Button("Retry") {
-                            finalStrokeCount = 0
-                            resetFinalCanvas = true
+                            clearCanvases()
                         }
                         Spacer()
                         Button("Skip") {
-                            goToNextLetter()
+                            lastAttemptedLetter = currentLetter
+                            activeSheet = .progress
                         }
                     }
                     .frame(width: geometry.size.width * 0.37)
@@ -138,21 +149,34 @@ struct ContentView: View {
             .padding()
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK") {
-                    clearCanvases()
-                    if alertIsCorrect {
-                        goToNextLetter()
+                    if alertTitle == "Correct!" {
+                        lastAttemptedLetter = currentLetter
+                        activeSheet = .progress
                     }
                 }
             } message: {
                 Text(alertMessage)
             }
-            .fullScreenCover(isPresented: $showProgressTracker) {
-                ProgressView(
-                    uniqueCorrectLetters: uniqueCorrectLetters.count,
-                    totalAttempts: totalAttempts,
-                    correctAttempts: correctAttempts,
-                    incorrectAttempts: incorrectAttempts
-                )
+            .fullScreenCover(item: $activeSheet) { sheet in
+                switch sheet {
+                case .progress:
+                    ProgressView(
+                        letter: lastAttemptedLetter,
+                        totalAttempts: totalAttempts,
+                        correctAttempts: correctAttempts,
+                        incorrectAttempts: incorrectAttempts,
+                        onDismiss: {
+                            activeSheet = nil
+                            goToNextLetter()
+                        },
+                        onGoToLetterMenu: {
+                            activeSheet = .letterMenu
+                        }
+                    )
+
+                case .letterMenu:
+                    LetterMenuView()
+                }
             }
             .navigationBarBackButtonHidden(true)
         }
@@ -163,38 +187,28 @@ struct ContentView: View {
         
         guard let detected = detectedLetter else {
             incorrectAttempts += 1
-            showCustomAlert(title: "No Letter Recognized",
-                            message: "Detected: None\nExpected: \(currentLetter)",
-                            isCorrect: false)
+            showCustomAlert(title: "No Letter Recognized", message: "Detected: None\nExpected: \(currentLetter)")
             return
         }
         
         if detected == String(currentLetter), finalStrokeCount == maxStrokes {
             correctAttempts += 1
-            uniqueCorrectLetters.insert(currentLetter)  // Track unique correct letters
-            showCustomAlert(title: "Correct!",
-                            message: "Detected: \(detected)\nExpected: \(currentLetter)",
-                            isCorrect: true)
+            showCustomAlert(title: "Correct!", message: "Detected: \(detected)\nExpected: \(currentLetter)")
         } else {
             incorrectAttempts += 1
-            showCustomAlert(title: "Incorrect!",
-                            message: "Detected: \(detected)\nExpected: \(currentLetter)",
-                            isCorrect: false)
+            showCustomAlert(title: "Incorrect!", message: "Detected: \(detected)\nExpected: \(currentLetter)")
         }
     }
 
-    func showCustomAlert(title: String, message: String, isCorrect: Bool) {
+    func showCustomAlert(title: String, message: String) {
         alertTitle = title
         alertMessage = message
-        alertIsCorrect = isCorrect
         showAlert = true
     }
 
     func goToNextLetter() {
         if currentLetterIndex < letters.count - 1 {
             currentLetterIndex += 1
-        } else {
-            showProgressTracker = true  // **Trigger Progress Tracker when all letters are done**
         }
         clearCanvases()
     }
@@ -202,13 +216,19 @@ struct ContentView: View {
     func clearCanvases() {
         practiceStrokeCount = 0
         finalStrokeCount = 0
+        isFinalCanvasUnlocked = false
+
         resetPracticeCanvas = true
         resetFinalCanvas = true
-        isFinalCanvasUnlocked = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            resetPracticeCanvas = false
+            resetFinalCanvas = false
+        }
     }
 }
 
 // MARK: - Preview
 #Preview {
-    ContentView()
+    ContentView(selectedLetter: "A")
 }

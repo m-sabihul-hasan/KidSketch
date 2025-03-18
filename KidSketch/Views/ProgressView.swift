@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct ProgressView: View {
-
-    let uniqueCorrectLetters: Int      // number of unique letters the user got right
+    
+    let letter: Character
     let totalAttempts: Int             // total attempts (correct + incorrect)
     let correctAttempts: Int
     let incorrectAttempts: Int
-    
-    
+    let onDismiss: () -> Void
+    let onGoToLetterMenu: () -> Void
+
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -39,11 +41,10 @@ struct ProgressView: View {
                     .frame(width: geometry.size.width * 0.45, height: geometry.size.height)
                     .offset(x: 420, y: 120)
                 
-                HStack{
-                    
+                HStack {
                     VStack(spacing: 20) {
                         // Title
-                        VStack{
+                        VStack {
                             Text("Progress")
                                 .font(.custom("Arial", size: 90))
                                 .fontWeight(.bold)
@@ -61,38 +62,24 @@ struct ProgressView: View {
                         
                         // Show the stats
                         VStack(alignment: .leading) {
-                            
-                            HStack{
-                                Image("progress")
+                            HStack {
+                                Image("\(letter)")
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width * 0.1, height: geometry.size.height * 0.1)
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.015, height: geometry.size.height * 0.15)
                                 
-                                Text("Unique Correct Letters: ")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(Color(hex: "#38bdff"))
-                                
-                                ForEach(0..<uniqueCorrectLetters, id: \.self) { index in
-                                    Image(systemName: "star.fill")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 30, height: 30)
-                                        .foregroundColor(.yellow)
-                                }
-                            }
-                            
-                            HStack{
-                                Image("progress")
+                                Image("giraffehead")
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width * 0.1, height: geometry.size.height * 0.1)
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.06, height: geometry.size.height * 0.15)
+                                    .padding(.horizontal, 20)
+                                
                                 Text("Total Attempts: ")
                                     .font(.title3)
                                     .fontWeight(.semibold)
                                     .foregroundColor(Color(hex: "#38bdff"))
                                 
-                                ForEach(0..<totalAttempts, id: \.self) { index in
+                                ForEach(0..<totalAttempts, id: \.self) { _ in
                                     Image(systemName: "star.fill")
                                         .resizable()
                                         .scaledToFit()
@@ -100,18 +87,26 @@ struct ProgressView: View {
                                         .foregroundColor(.yellow)
                                 }
                             }
+                            .padding(.horizontal, 30)
                             
-                            HStack{
-                                Image("progress")
+                            HStack {
+                                Image("\(letter)")
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width * 0.1, height: geometry.size.height * 0.1)
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.015, height: geometry.size.height * 0.15)
+                                
+                                Image("giraffehead")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.06, height: geometry.size.height * 0.15)
+                                    .padding(.horizontal, 20)
+                                
                                 Text("Correct Attempts: ")
                                     .font(.title3)
                                     .fontWeight(.semibold)
                                     .foregroundColor(Color(hex: "#38bdff"))
                                 
-                                ForEach(0..<correctAttempts, id: \.self) { index in
+                                ForEach(0..<correctAttempts, id: \.self) { _ in
                                     Image(systemName: "star.fill")
                                         .resizable()
                                         .scaledToFit()
@@ -119,18 +114,27 @@ struct ProgressView: View {
                                         .foregroundColor(.yellow)
                                 }
                             }
+                            .padding(.horizontal, 30)
+
                             
-                            HStack{
-                                Image("progress")
+                            HStack {
+                                Image("\(letter)")
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width * 0.1, height: geometry.size.height * 0.1)
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.015, height: geometry.size.height * 0.15)
+                                
+                                Image("giraffehead")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: geometry.size.width * 0.06, height: geometry.size.height * 0.15)
+                                    .padding(.horizontal, 20)
+                                
                                 Text("Incorrect Attempts: ")
                                     .font(.title3)
                                     .fontWeight(.semibold)
                                     .foregroundColor(Color(hex: "#38bdff"))
                                 
-                                ForEach(0..<incorrectAttempts, id: \.self) { index in
+                                ForEach(0..<incorrectAttempts, id: \.self) { _ in
                                     Image(systemName: "star.fill")
                                         .resizable()
                                         .scaledToFit()
@@ -138,8 +142,39 @@ struct ProgressView: View {
                                         .foregroundColor(.yellow)
                                 }
                             }
+                            .padding(.horizontal, 30)
+
                         }
                         .padding()
+                        
+                        Button(action: {
+                            onDismiss()
+                        }) {
+                            Text("Continue")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .frame(width: 200, height: 50)
+                                .background(Color(hex: "#38bdff"))
+                                .foregroundColor(.white)
+                                .cornerRadius(15)
+                        }
+                        .padding(.top, 20)
+                        
+                        Button(action: {
+                            onGoToLetterMenu()
+                        }) {
+                            Text("Go to Letter Menu")
+                                .font(.title2)
+                                .bold()
+                                .padding()
+                                .frame(maxWidth: 250, maxHeight: 50)
+                                .background(Color(hex: "#ff6f00"))
+                                .foregroundColor(.white)
+                                .cornerRadius(15)
+                        }
+                        .padding(.top, 20)
+
+                        
                         Spacer()
                     }
                     
@@ -151,12 +186,14 @@ struct ProgressView: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     ProgressView(
-        uniqueCorrectLetters: 3,
-        totalAttempts: 10,
-        correctAttempts: 6,
-        incorrectAttempts: 4
+        letter: "A",
+        totalAttempts: 5,
+        correctAttempts: 3,
+        incorrectAttempts: 2,
+        onDismiss: {},
+        onGoToLetterMenu: {}
+
     )
 }

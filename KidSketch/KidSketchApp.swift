@@ -27,13 +27,13 @@ struct KidSketchApp: App {
             }
             else {
                 HomeView()
+//                ContentView()
                     .onAppear {
                         AppDelegate.lockOrientation(.landscape)
                         print("[HandwritingApp] Launched in landscape mode.")
                         
                         
                     }
-                
             }
         }
     }
