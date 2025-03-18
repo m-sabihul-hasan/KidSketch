@@ -15,16 +15,13 @@ struct ContentView: View {
         "J": 1, "K": 3, "L": 2, "M": 4, "N": 3, "O": 1, "P": 2, "Q": 2, "R": 2,
         "S": 1, "T": 2, "U": 1, "V": 2, "W": 4, "X": 2, "Y": 3, "Z": 3
     ]
-    
-    let selectedLetter: Character?
-    
-    // Tracking progress stats
+
+    @State private var selectedLetter: Character
     @State private var totalAttempts = 0
     @State private var correctAttempts = 0
     @State private var incorrectAttempts = 0
-    
+
     // Canvas state
-    @State private var currentLetterIndex = 0
     @State private var practiceStrokeCount = 0
     @State private var finalStrokeCount = 0
     @State private var resetPracticeCanvas = false
@@ -32,28 +29,30 @@ struct ContentView: View {
     @State private var isFinalCanvasUnlocked = false
 
     // Progress Tracking
-    @State private var lastAttemptedLetter: Character = "A"
-
-    // **New: ActiveSheet Enum**
-    enum ActiveSheet: Identifiable {
-        case progress, letterMenu
-        var id: Self { self }
-    }
+    @State private var lastAttemptedLetter: Character
     @State private var activeSheet: ActiveSheet? = nil
 
     // **Alerts**
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
-    
-    var currentLetter: Character {
-        letters[currentLetterIndex]
+
+    // **Enum to track active full-screen sheet**
+    enum ActiveSheet: Identifiable {
+        case progress, letterMenu
+        var id: Self { self }
     }
+
+    init(selectedLetter: Character) {
+        self._selectedLetter = State(initialValue: selectedLetter)
+        self._lastAttemptedLetter = State(initialValue: selectedLetter)
+    }
+
     var maxStrokes: Int {
-        requiredStrokes[currentLetter] ?? 1
+        requiredStrokes[selectedLetter] ?? 1
     }
     var practiceImageName: String {
-        "\(currentLetter)"
+        "\(selectedLetter)"
     }
 
     var body: some View {
@@ -65,23 +64,18 @@ struct ContentView: View {
                     .frame(width: geometry.size.width * 0.7,
                            height: geometry.size.height * 0.35)
                     .offset(x: 60, y: 500)
-                
+
                 VStack {
                     HStack {
                         Text("Strokes: \(practiceStrokeCount)/\(maxStrokes)")
                         Spacer()
-                        Button("Reset") {
-                            resetPracticeCanvas = true
-                            isFinalCanvasUnlocked = false
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                resetPracticeCanvas = false
-                            }
-                        }
-                        .padding()
+//                        Button("Reset") {
+//                            clearCanvases()
+//                        }
+//                        .padding()
                     }
                     .frame(width: geometry.size.width * 0.4)
-                    
+
                     ZStack {
                         Image(practiceImageName)
                             .resizable()
@@ -89,7 +83,7 @@ struct ContentView: View {
                             .opacity(0.6)
                             .frame(width: geometry.size.width * 0.4,
                                    height: geometry.size.height * 0.6)
-                        
+
                         PracticeCanvas(
                             strokeCount: $practiceStrokeCount,
                             maxStrokes: maxStrokes,
@@ -102,7 +96,7 @@ struct ContentView: View {
                     }
                 }
                 .offset(x: -150, y: 80)
-                
+
                 VStack {
                     ZStack {
                         Image("canvas")
@@ -110,7 +104,7 @@ struct ContentView: View {
                             .scaledToFill()
                             .frame(width: geometry.size.width * 0.55,
                                    height: geometry.size.height * 0.6)
-                        
+
                         FinalCanvas(
                             strokeCount: $finalStrokeCount,
                             maxStrokes: maxStrokes,
@@ -128,7 +122,7 @@ struct ContentView: View {
                                height: geometry.size.height * 0.32)
                         .offset(x: -12, y: 140)
                     }
-                    
+
                     HStack {
                         Text("Strokes: \(finalStrokeCount)/\(maxStrokes)")
                         Spacer()
@@ -137,7 +131,7 @@ struct ContentView: View {
                         }
                         Spacer()
                         Button("Skip") {
-                            lastAttemptedLetter = currentLetter
+                            lastAttemptedLetter = selectedLetter
                             activeSheet = .progress
                         }
                     }
@@ -150,7 +144,7 @@ struct ContentView: View {
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK") {
                     if alertTitle == "Correct!" {
-                        lastAttemptedLetter = currentLetter
+                        lastAttemptedLetter = selectedLetter
                         activeSheet = .progress
                     }
                 }
@@ -175,28 +169,38 @@ struct ContentView: View {
                     )
 
                 case .letterMenu:
-                    LetterMenuView()
+                    LetterMenuView { newLetter in
+                        resetForNewLetter(newLetter)
+                    }
                 }
             }
             .navigationBarBackButtonHidden(true)
         }
     }
-    
+
+    func resetForNewLetter(_ newLetter: Character) {
+        selectedLetter = newLetter
+        lastAttemptedLetter = newLetter
+        clearCanvases()
+    }
+
     func validateLetter(_ detectedLetter: String?) {
         totalAttempts += 1
         
         guard let detected = detectedLetter else {
             incorrectAttempts += 1
-            showCustomAlert(title: "No Letter Recognized", message: "Detected: None\nExpected: \(currentLetter)")
+            showCustomAlert(title: "No Letter Recognized", message: "Detected: None\nExpected: \(selectedLetter)")
+            clearCanvases() // ✅ Clear canvas on incorrect classification
             return
         }
         
-        if detected == String(currentLetter), finalStrokeCount == maxStrokes {
+        if detected == String(selectedLetter), finalStrokeCount == maxStrokes {
             correctAttempts += 1
-            showCustomAlert(title: "Correct!", message: "Detected: \(detected)\nExpected: \(currentLetter)")
+            showCustomAlert(title: "Correct!", message: "Detected: \(detected)\nExpected: \(selectedLetter)")
         } else {
             incorrectAttempts += 1
-            showCustomAlert(title: "Incorrect!", message: "Detected: \(detected)\nExpected: \(currentLetter)")
+            showCustomAlert(title: "Incorrect!", message: "Detected: \(detected)\nExpected: \(selectedLetter)")
+            clearCanvases() // ✅ Clear canvas when incorrect classification is made
         }
     }
 
@@ -205,10 +209,15 @@ struct ContentView: View {
         alertMessage = message
         showAlert = true
     }
-
+    
     func goToNextLetter() {
-        if currentLetterIndex < letters.count - 1 {
-            currentLetterIndex += 1
+        if let currentIndex = letters.firstIndex(of: selectedLetter),
+           currentIndex < letters.count - 1 {
+            // Move to the next letter in the array
+            selectedLetter = letters[currentIndex + 1]
+        } else {
+            // If all letters are completed, go back to LetterMenuView
+            activeSheet = .letterMenu
         }
         clearCanvases()
     }
@@ -228,7 +237,6 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     ContentView(selectedLetter: "A")
 }

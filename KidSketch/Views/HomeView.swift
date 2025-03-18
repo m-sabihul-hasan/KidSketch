@@ -38,7 +38,7 @@ struct HomeView: View {
                         
                         NavigationLink(destination: OptionsView()) {
                             Text("Let’s Start")
-                                .font(.custom("Arial", size: 40))
+                                .font(.custom("Arial", size: 30))
                                 .fontWeight(.bold)
                                 .padding(.horizontal, 40)
                                 .padding(.vertical, 10)
